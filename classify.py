@@ -1,5 +1,5 @@
 """
-학습된 KoBERT 모델로 문서를 종류별로 분류하는 스크립트
+학습된 KLUE RoBERTa 모델로 문서를 종류별로 분류하는 스크립트
 
 - input 폴더에 문서 파일들을 넣으면
 - output 폴더에 문서 종류(기안서, 견적서, 계약서 등)별로 폴더를 만들어 분류
@@ -16,6 +16,7 @@ python classify.py \
 import os
 import shutil
 import argparse
+import warnings
 from pathlib import Path
 from typing import Optional
 
@@ -24,15 +25,18 @@ import torch.nn as nn
 from transformers import BertModel, AutoTokenizer
 import json
 
+# PDF 읽기 경고 무시
+warnings.filterwarnings('ignore')
+
 
 # ======================
-# KoBERT 분류 모델 (train.py와 동일)
+# KLUE RoBERTa 분류 모델 (train.py와 동일)
 # ======================
 
 class KoBERTClassifier(nn.Module):
     def __init__(self, num_classes: int, dropout_rate: float = 0.1):
         super().__init__()
-        self.bert = BertModel.from_pretrained("skt/kobert-base-v1")
+        self.bert = BertModel.from_pretrained("klue/roberta-base")
         self.dropout = nn.Dropout(dropout_rate)
         self.classifier = nn.Linear(768, num_classes)
 

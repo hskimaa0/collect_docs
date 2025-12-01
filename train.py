@@ -1,5 +1,5 @@
 """
-KoBERT 기반 문서 타입 분류기 학습 스크립트
+KLUE RoBERTa 기반 문서 타입 분류기 학습 스크립트
 
 - 지원 데이터 포맷:
   - CSV:   id,text,label
@@ -36,15 +36,15 @@ from torch.optim import AdamW
 
 
 # ======================
-# KoBERT 분류 모델 정의
+# KLUE RoBERTa 분류 모델 정의
 # ======================
 
 class KoBERTClassifier(nn.Module):
     def __init__(self, num_classes: int, dropout_rate: float = 0.1):
         super().__init__()
-        self.bert = BertModel.from_pretrained("skt/kobert-base-v1")
+        self.bert = BertModel.from_pretrained("klue/roberta-base")
         self.dropout = nn.Dropout(dropout_rate)
-        self.classifier = nn.Linear(768, num_classes)  # KoBERT hidden size = 768
+        self.classifier = nn.Linear(768, num_classes)  # KLUE RoBERTa hidden size = 768
 
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(
@@ -386,7 +386,7 @@ def main():
     val_labels = [label2id[lbl] for lbl in val_labels_str]
 
     # 4. 토크나이저 / 데이터셋 / 데이터로더
-    tokenizer = AutoTokenizer.from_pretrained("skt/kobert-base-v1")
+    tokenizer = AutoTokenizer.from_pretrained("klue/roberta-base")
 
     train_dataset = TextDataset(
         texts=train_texts,
