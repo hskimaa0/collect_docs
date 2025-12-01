@@ -30,7 +30,9 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from transformers import BertModel, AutoTokenizer, AdamW, get_linear_schedule_with_warmup
+from transformers import BertModel, AutoTokenizer, get_linear_schedule_with_warmup
+from torch.optim import AdamW
+from tqdm import tqdm
 
 
 # ======================
@@ -179,11 +181,15 @@ def train_one_epoch(
     optimizer,
     scheduler,
     device,
+    epoch=None,
+    num_epochs=None,
 ):
     model.train()
     total_loss = 0.0
 
-    for batch in dataloader:
+    desc = f"[Epoch {epoch}/{num_epochs}] Training" if epoch else "Training"
+    pbar = tqdm(dataloader, desc=desc, leave=False)
+    for batch in pbar:
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         labels = batch["labels"].to(device)
@@ -199,6 +205,7 @@ def train_one_epoch(
             scheduler.step()
 
         total_loss += loss.item()
+        pbar.set_postfix({"loss": f"{loss.item():.4f}"})
 
     avg_loss = total_loss / max(len(dataloader), 1)
     return avg_loss
@@ -217,7 +224,8 @@ def evaluate(
     loss_fn = nn.CrossEntropyLoss()
 
     with torch.no_grad():
-        for batch in dataloader:
+        pbar = tqdm(dataloader, desc="Evaluating", leave=False)
+        for batch in pbar:
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
@@ -475,6 +483,8 @@ def main():
             optimizer,
             scheduler,
             device,
+            epoch,
+            args.num_epochs,
         )
         print(f"[Train] loss: {train_loss:.4f}")
 
