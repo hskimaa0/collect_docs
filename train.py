@@ -1,5 +1,5 @@
 """
-KLUE RoBERTa 기반 문서 타입 분류기 학습 스크립트
+KoBERT 기반 문서 타입 분류기 학습 스크립트
 
 - 지원 데이터 포맷:
   - CSV:   id,text,label
@@ -29,22 +29,20 @@ from torch.utils.data import Dataset, DataLoader
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from tqdm import tqdm
 
-from transformers import BertModel, AutoTokenizer, get_linear_schedule_with_warmup
-from torch.optim import AdamW
+from transformers import BertModel, AutoTokenizer, AdamW, get_linear_schedule_with_warmup
 
 
 # ======================
-# KLUE RoBERTa 분류 모델 정의
+# KoBERT 분류 모델 정의
 # ======================
 
 class KoBERTClassifier(nn.Module):
     def __init__(self, num_classes: int, dropout_rate: float = 0.1):
         super().__init__()
-        self.bert = BertModel.from_pretrained("klue/roberta-base")
+        self.bert = BertModel.from_pretrained("skt/kobert-base-v1")
         self.dropout = nn.Dropout(dropout_rate)
-        self.classifier = nn.Linear(768, num_classes)  # KLUE RoBERTa hidden size = 768
+        self.classifier = nn.Linear(768, num_classes)  # KoBERT hidden size = 768
 
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(
@@ -181,14 +179,11 @@ def train_one_epoch(
     optimizer,
     scheduler,
     device,
-    epoch,
-    num_epochs,
 ):
     model.train()
     total_loss = 0.0
 
-    pbar = tqdm(dataloader, desc=f"[Epoch {epoch}/{num_epochs}] Training", leave=False)
-    for batch in pbar:
+    for batch in dataloader:
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         labels = batch["labels"].to(device)
@@ -204,7 +199,6 @@ def train_one_epoch(
             scheduler.step()
 
         total_loss += loss.item()
-        pbar.set_postfix({"loss": f"{loss.item():.4f}"})
 
     avg_loss = total_loss / max(len(dataloader), 1)
     return avg_loss
@@ -223,8 +217,7 @@ def evaluate(
     loss_fn = nn.CrossEntropyLoss()
 
     with torch.no_grad():
-        pbar = tqdm(dataloader, desc="Evaluating", leave=False)
-        for batch in pbar:
+        for batch in dataloader:
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
@@ -346,7 +339,7 @@ def main():
             train_labels_str,
             test_size=0.1,
             random_state=args.seed,
-            # stratify 제거 (라벨당 1개만 있는 경우 에러 발생)
+            stratify=train_labels_str,  # 라벨 비율 유지
         )
 
     # 2. 라벨 매핑 생성 (기존 모델이 있으면 기존 매핑 로드 후 확장)
@@ -386,7 +379,7 @@ def main():
     val_labels = [label2id[lbl] for lbl in val_labels_str]
 
     # 4. 토크나이저 / 데이터셋 / 데이터로더
-    tokenizer = AutoTokenizer.from_pretrained("klue/roberta-base")
+    tokenizer = AutoTokenizer.from_pretrained("skt/kobert-base-v1")
 
     train_dataset = TextDataset(
         texts=train_texts,
@@ -482,8 +475,6 @@ def main():
             optimizer,
             scheduler,
             device,
-            epoch,
-            args.num_epochs,
         )
         print(f"[Train] loss: {train_loss:.4f}")
 

@@ -22,12 +22,8 @@ python make_train_data.py --input_dir ./input --output_file ./data/train.json
 import os
 import json
 import argparse
-import warnings
 from pathlib import Path
 from typing import List, Dict
-
-# PDF 읽기 경고 무시
-warnings.filterwarnings('ignore')
 
 
 # ======================
@@ -165,7 +161,7 @@ def clean_text(text: str, max_length: int = 2000) -> str:
     """텍스트 정리 (공백 정리, 길이 제한)"""
     # 연속 공백/줄바꿈 정리
     text = " ".join(text.split())
-    # 너무 길면 자르기 (KLUE RoBERTa max_length 고려)
+    # 너무 길면 자르기 (KoBERT max_length 고려)
     if len(text) > max_length:
         text = text[:max_length]
     return text
